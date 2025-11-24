@@ -3,7 +3,7 @@
 interface ButtonProps {
   children: React.ReactNode
   onClick?: () => void
-  variant?: 'primary' | 'outline' | 'ghost'
+  variant?: 'primary' | 'outline' | 'ghost' | 'danger'
   disabled?: boolean
   className?: string
 }
@@ -20,7 +20,8 @@ export default function Button({
   const variants = {
     primary: 'bg-black text-white hover:bg-gray-800 border border-black',
     outline: 'border border-black text-black hover:bg-gray-100',
-    ghost: 'text-black hover:bg-gray-100'
+    ghost: 'text-black hover:bg-gray-100',
+    danger: 'bg-red-600 text-white hover:bg-red-700 border border-red-600'
   }
   
   return (
@@ -33,4 +34,3 @@ export default function Button({
     </button>
   )
 }
-
