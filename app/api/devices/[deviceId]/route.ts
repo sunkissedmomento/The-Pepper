@@ -3,8 +3,9 @@ import { createServerClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  context: { params: Promise<{ deviceId: string }> } // <-- params is now a Promise
 ) {
+  const params = await context.params       // <-- await it
   const supabase = createServerClient()
   
   const { data, error } = await supabase
@@ -16,14 +17,21 @@ export async function GET(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 404 })
   }
-  
+
+  // Optional: mark device as online
+  await supabase
+    .from('devices')
+    .update({ last_seen: new Date().toISOString(), is_online: true })
+    .eq('device_id', params.deviceId)
+
   return NextResponse.json(data)
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  context: { params: Promise<{ deviceId: string }> } // <-- same here
 ) {
+  const params = await context.params       // <-- await it
   const supabase = createServerClient()
   const body = await request.json()
   
@@ -40,5 +48,3 @@ export async function PATCH(
   
   return NextResponse.json(data)
 }
-
-// (Spotify now-playing API route moved to app/api/spotify/now-playing/route.ts)
