@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { deviceId: string } }
-) {
+interface Params {
+  deviceId: string
+}
+
+export async function GET(request: NextRequest, context: { params: Params }) {
+  const { params } = context
   const supabase = createServerClient()
 
   const { data, error } = await supabase
@@ -26,10 +28,8 @@ export async function GET(
   return NextResponse.json(data)
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { deviceId: string } }
-) {
+export async function PATCH(request: NextRequest, context: { params: Params }) {
+  const { params } = context
   const supabase = createServerClient()
   const body = await request.json()
 
