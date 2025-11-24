@@ -1,0 +1,177 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Reminder, Device, NowPlaying } from '@/types'
+import ReminderCard from '@/components/dashboard/ReminderCard'
+import DeviceStatus from '@/components/dashboard/DeviceStatus'
+import NowPlayingComponent from '@/components/dashboard/NowPlaying'
+import Button from '@/components/ui/Button'
+import { Plus } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+export default function Dashboard() {
+  const [reminders, setReminders] = useState<Reminder[]>([])
+  const [devices, setDevices] = useState<Device[]>([])
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null)
+  const [loading, setLoading] = useState(true)
+  
+  const supabase = createClient()
+  
+  useEffect(() => {
+    fetchData()
+    
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, () => {
+        fetchReminders()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
+        fetchDevices()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'now_playing' }, () => {
+        fetchNowPlaying()
+      })
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+  
+  async function fetchData() {
+    setLoading(true)
+    await Promise.all([fetchReminders(), fetchDevices(), fetchNowPlaying()])
+    setLoading(false)
+  }
+  
+  async function fetchReminders() {
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .eq('is_active', true)
+      .order('reminder_time', { ascending: true })
+    
+    if (error) {
+      toast.error('Failed to load reminders')
+    } else {
+      setReminders(data || [])
+    }
+  }
+  
+  async function fetchDevices() {
+    const { data, error } = await supabase
+      .from('devices')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      toast.error('Failed to load devices')
+    } else {
+      setDevices(data || [])
+    }
+  }
+  
+  async function fetchNowPlaying() {
+    const { data, error } = await supabase
+      .from('now_playing')
+      .select('*')
+      .single()
+    
+    if (!error && data) {
+      setNowPlaying(data)
+    }
+  }
+  
+  async function deleteReminder(id: string) {
+    const { error } = await supabase
+      .from('reminders')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      toast.error('Failed to delete reminder')
+    } else {
+      toast.success('Reminder deleted')
+      fetchReminders()
+    }
+  }
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage your reminders and devices</p>
+          </div>
+          <Button variant="primary">
+            <Plus size={16} className="inline mr-2" />
+            New Reminder
+          </Button>
+        </div>
+        
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Devices & Now Playing */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-sm font-semibold mb-3 text-gray-500">DEVICES</h2>
+              <div className="space-y-3">
+                {devices.length === 0 ? (
+                  <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <p className="text-sm text-gray-500">No devices connected</p>
+                  </div>
+                ) : (
+                  devices.map(device => (
+                    <DeviceStatus key={device.id} device={device} />
+                  ))
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-sm font-semibold mb-3 text-gray-500">NOW PLAYING</h2>
+              <NowPlayingComponent nowPlaying={nowPlaying} />
+            </div>
+          </div>
+          
+          {/* Center & Right - Reminders */}
+          <div className="lg:col-span-2">
+            <h2 className="text-sm font-semibold mb-3 text-gray-500">UPCOMING REMINDERS</h2>
+            <div className="space-y-3">
+              {reminders.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-lg p-12 text-center">
+                  <p className="text-gray-500 mb-4">No reminders yet</p>
+                  <Button variant="outline">Create your first reminder</Button>
+                </div>
+              ) : (
+                reminders.map(reminder => (
+                  <ReminderCard
+                    key={reminder.id}
+                    reminder={reminder}
+                    onEdit={(r) => console.log('Edit', r)}
+                    onDelete={deleteReminder}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
