@@ -1,7 +1,7 @@
 
 import type { Metadata } from 'next'
 import { Toaster } from 'react-hot-toast'
-import './app/globals.css'
+import '../globals.css'
 
 export const metadata: Metadata = {
   title: 'ReminderSync - Smart Reminders',
