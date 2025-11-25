@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Music, CheckCircle, XCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [spotifyConnected, setSpotifyConnected] = useState(false)
@@ -249,5 +249,17 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   )
 }
