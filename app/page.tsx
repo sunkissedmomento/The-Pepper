@@ -1,10 +1,22 @@
 'use client'
 
-import Button from '@/components/ui/Button'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import Button from '@/components/ui/Button'
 
 export default function LandingPage() {
   const router = useRouter()
+  const supabase = createClientComponentClient()
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/dashboard') // (dashboard)/page.tsx is served at '/'
+      }
+    })
+  }, [router, supabase])
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-50 to-white px-6">

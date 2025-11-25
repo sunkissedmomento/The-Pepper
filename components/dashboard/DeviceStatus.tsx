@@ -6,39 +6,35 @@ import { formatDistanceToNow } from 'date-fns'
 
 interface DeviceStatusProps {
   device: Device
+  reminderCount?: number
 }
 
-export default function DeviceStatus({ device }: DeviceStatusProps) {
+export default function DeviceStatus({ device, reminderCount = 0 }: DeviceStatusProps) {
   const lastSeenText = formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })
   
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <div className="flex items-center justify-between">
+    <div className="border border-gray-300 rounded p-4 bg-white">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded">
-            <Monitor size={24} />
+          <div className="p-2 bg-gray-100 rounded border border-gray-300">
+            <Monitor size={20} />
           </div>
           <div>
-            <h3 className="font-semibold">{device.device_name}</h3>
+            <h3 className="font-semibold text-sm">{device.device_name}</h3>
             <p className="text-xs text-gray-500 font-mono">{device.device_id}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {device.is_online ? (
-            <>
-              <Wifi size={16} className="text-green-600" />
-              <span className="text-sm text-green-600">Online</span>
-            </>
+            <Wifi size={14} className="text-black" />
           ) : (
-            <>
-              <WifiOff size={16} className="text-red-600" />
-              <span className="text-sm text-red-600">Offline</span>
-            </>
+            <WifiOff size={14} className="text-gray-400" />
           )}
         </div>
       </div>
-      <div className="mt-3 text-xs text-gray-500">
-        Last seen: {lastSeenText}
+      <div className="text-xs text-gray-500 space-y-1">
+        <p>Last seen: {lastSeenText}</p>
+        <p>Active reminders: {reminderCount}</p>
       </div>
     </div>
   )
