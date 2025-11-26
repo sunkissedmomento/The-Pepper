@@ -36,18 +36,28 @@ function SettingsContent() {
   async function fetchUserData() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (user) {
       setEmail(user.email || '')
-      
-      const { data: profile } = await supabase
+
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('username, spotify_user_id')
         .eq('id', user.id)
         .single()
-      
-      if (profile) {
-        setUsername(profile.username || '')
+
+      if (error) {
+        console.error('Profile fetch error:', error)
+        // If profile doesn't exist, create it with a default username
+        if (error.code === 'PGRST116') {
+          const defaultUsername = user.email?.split('@')[0] || 'user'
+          await supabase
+            .from('profiles')
+            .insert({ id: user.id, username: defaultUsername })
+          setUsername(defaultUsername)
+        }
+      } else if (profile) {
+        setUsername(profile.username || user.email?.split('@')[0] || '')
         setSpotifyConnected(!!profile.spotify_user_id)
         setSpotifyUserId(profile.spotify_user_id || '')
       }

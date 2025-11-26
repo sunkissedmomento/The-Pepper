@@ -17,33 +17,47 @@ export default function SignupPage() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+          },
         },
-      },
-    })
-    
-    if (error) {
-      toast.error(error.message)
-    } else if (data.user) {
-      // Create profile
-      await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          username,
-        })
-      
-      toast.success('Account created! Please check your email to verify.')
-      router.push('/login')
+      })
+
+      if (error) {
+        toast.error(error.message)
+        setLoading(false)
+        return
+      }
+
+      if (data.user) {
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            username,
+          })
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+          toast.error('Account created but profile setup failed. Please contact support.')
+        } else {
+          toast.success('Account created! You can now sign in.')
+          router.push('/login')
+        }
+      }
+    } catch (err) {
+      console.error('Signup error:', err)
+      toast.error('An unexpected error occurred')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
   
   return (
@@ -89,7 +103,7 @@ export default function SignupPage() {
             />
           </div>
           
-          <Button variant="primary" disabled={loading} className="w-full">
+          <Button variant="primary" type="submit" disabled={loading} className="w-full">
             {loading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>

@@ -1,5 +1,6 @@
 export interface Device {
   id: string
+  user_id: string
   device_id: string
   device_name: string
   is_online: boolean
@@ -9,6 +10,7 @@ export interface Device {
 
 export interface Reminder {
   id: string
+  user_id: string
   title: string
   message?: string
   reminder_time: string
@@ -21,6 +23,8 @@ export interface Reminder {
 }
 
 export interface NowPlaying {
+  id?: string
+  user_id?: string
   track_name: string
   artist_name: string
   album_name: string
@@ -32,4 +36,8 @@ export interface Profile {
   id: string
   username: string
   spotify_user_id?: string
+  spotify_access_token?: string
+  spotify_refresh_token?: string
+  created_at?: string
+  updated_at?: string
 }

@@ -4,12 +4,16 @@ import { createServerClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
-  
+
   if (!code) {
     return NextResponse.redirect(new URL('/settings?error=spotify_auth_failed', request.url))
   }
-  
+
   try {
+    // Dynamically determine redirect URI based on request origin
+    const origin = request.headers.get('origin') || new URL(request.url).origin
+    const redirectUri = `${origin}/api/auth/spotify/callback`
+
     // Exchange code for tokens
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -21,15 +25,16 @@ export async function GET(request: NextRequest) {
       },
       body: new URLSearchParams({
         code,
-        redirect_uri: process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     })
     
     const data = await response.json()
-    
+
     if (!response.ok) {
-      throw new Error('Failed to get Spotify tokens')
+      console.error('Spotify token exchange failed:', data)
+      throw new Error(data.error_description || 'Failed to get Spotify tokens')
     }
     
     // Get Spotify user info
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (user) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           spotify_access_token: data.access_token,
@@ -54,6 +59,11 @@ export async function GET(request: NextRequest) {
           spotify_user_id: spotifyUser.id,
         })
         .eq('id', user.id)
+
+      if (updateError) {
+        console.error('Profile update error:', updateError)
+        throw new Error('Failed to save Spotify credentials')
+      }
     }
     
     return NextResponse.redirect(new URL('/settings?spotify=connected', request.url))

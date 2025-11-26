@@ -14,16 +14,33 @@ export default function Navbar() {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('username')
           .eq('id', user.id)
           .single()
-        if (data) setUsername(data.username)
+
+        if (error) {
+          console.error('Profile fetch error:', error)
+          // If profile doesn't exist, create it
+          if (error.code === 'PGRST116') {
+            const defaultUsername = user.email?.split('@')[0] || 'user'
+            await supabase
+              .from('profiles')
+              .insert({ id: user.id, username: defaultUsername })
+            setUsername(defaultUsername)
+          }
+        } else if (data) {
+          // Check if username contains @ (is an email)
+          const displayName = data.username?.includes('@')
+            ? data.username.split('@')[0]
+            : (data.username || user.email?.split('@')[0] || 'user')
+          setUsername(displayName)
+        }
       }
     }
     getUser()
-  }, [])
+  }, [supabase])
   
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -36,14 +53,14 @@ export default function Navbar() {
         <div className="flex items-center gap-8">
           <h1 className="text-2xl font-bold">ReminderSync</h1>
           <div className="flex gap-4">
-            <button 
-              onClick={() => router.push('/')}
+            <button
+              onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded"
             >
               <Home size={18} />
               <span className="text-sm font-medium">Dashboard</span>
             </button>
-            <button 
+            <button
               onClick={() => router.push('/devices')}
               className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded"
             >
@@ -54,7 +71,7 @@ export default function Navbar() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">@{username}</span>
-          <button 
+          <button
             onClick={() => router.push('/settings')}
             className="p-2 hover:bg-gray-100 rounded"
           >

@@ -26,7 +26,7 @@ export default function LoginPage() {
       toast.error(error.message)
     } else {
       toast.success('Welcome back!')
-      router.push('/')
+      router.push('/dashboard')
     }
     
     setLoading(false)
@@ -63,7 +63,7 @@ export default function LoginPage() {
             />
           </div>
           
-          <Button variant="primary" disabled={loading} className="w-full">
+          <Button variant="primary" type="submit" disabled={loading} className="w-full">
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
